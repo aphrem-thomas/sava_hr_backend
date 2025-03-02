@@ -12,8 +12,8 @@ def login():
     password = request.form.get('password')
     print("received user name:", user_name)
     print("received pass:", password)
-    print("is matching", user_name=='ty' and password == 'abc')
-    if True:
+    print("is matching", user_name=='admin-sava' and password == 'abc')
+    if user_name=='admin-sava' and password == 'abc':
         encoded_jwt = jwt.encode({"userId":user_name}, "dkfalkdfjalkdfjlakdjfldjflkd", algorithm="HS256")
         print("encoded jwt", encoded_jwt)
         resp = make_response(jsonify({"message":"howdi partner..."}))
@@ -23,6 +23,13 @@ def login():
         return resp, 200
     else:
         return 500
+    
+@app.route("/logout", methods=['POST'])
+def logout():
+    resp = make_response(jsonify({"message":"howdi partner..."}))
+    resp.delete_cookie('session')
+    return resp, 200
+
 
 
 if __name__ == "__main__":
