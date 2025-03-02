@@ -13,16 +13,17 @@ def login():
     print("received user name:", user_name)
     print("received pass:", password)
     print("is matching", user_name=='admin-sava' and password == 'abc')
+    resp = make_response(jsonify({"message":"howdi partner..."}))
     if user_name=='admin-sava' and password == 'abc':
         encoded_jwt = jwt.encode({"userId":user_name}, "dkfalkdfjalkdfjlakdjfldjflkd", algorithm="HS256")
         print("encoded jwt", encoded_jwt)
-        resp = make_response(jsonify({"message":"howdi partner..."}))
         resp.set_cookie('session', encoded_jwt,
                          expires=time.time()+ 24 * 60 * 60 * 1000,
                          path='/')
         return resp, 200
     else:
-        return 500
+        error_resp = make_response("",401)
+        return error_resp
     
 @app.route("/logout", methods=['POST'])
 def logout():
