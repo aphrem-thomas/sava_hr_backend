@@ -17,15 +17,24 @@ from flask_jwt_extended import set_access_cookies
 from flask_jwt_extended import unset_jwt_cookies
 from datetime import datetime
 from datetime import timedelta
+from flask_mail import Mail, Message 
 
 
 load_dotenv()
 
 app = Flask(__name__)
+mail = Mail(app) # instantiate the mail class 
 app.config["JWT_COOKIE_SECURE"] = False
 app.config["JWT_TOKEN_LOCATION"] = ["cookies"] 
 app.config["JWT_SECRET_KEY"] = os.getenv('SIGN_KEY')
 app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(hours=1)
+app.config['MAIL_SERVER']='smtp.gmail.com'
+app.config['MAIL_PORT'] = 465
+app.config['MAIL_USERNAME'] = 'jobs4ottawa@gmail.com'
+app.config['MAIL_PASSWORD'] = os.getenv("MAIL_PASS")
+app.config['MAIL_USE_TLS'] = False
+app.config['MAIL_USE_SSL'] = True
+mail = Mail(app) 
 
 jwt = JWTManager(app)
 
@@ -46,10 +55,15 @@ def get_database():
   
 # This is added so that many files can reuse the function get_database()
 
+ALLOWED_EXTENSIONS = {'pdf'}
+
+def allowed_file(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
-if __name__ == "__main__":   
-  
+
+if __name__ == "__main__":    
    # Get the database
    dbname = get_database()
    jobsCollection = dbname['jobs']
@@ -135,6 +149,26 @@ def get_jobs():
 @app.route("/job/<id>", methods=['GET'])
 def get_job():
     return {}, '200'
+
+@app.route("/apply", methods=['POST'])
+def apply_job():
+    if 'file' not in request.files:
+        return {"message":"no files attached"}, '404'
+    file = request.files['file']
+    # If the user does not select a file, the browser submits an
+    # empty file without a filename.
+    if file.filename == '':
+        return {"message":"no files attached"}, '404'
+    if file and allowed_file(file.filename):
+        msg = Message( 
+                    'Hello', 
+                    sender ='jobs4ottawa@gmail.com', 
+                    recipients = ['jobs4ottawa@gmail.com'] 
+                ) 
+        msg.body = 'Hello submit resume send from savahr'
+        msg.attach(file.filename,None,file.read())
+        mail.send(msg) 
+        return {}, '200'
 
 
 

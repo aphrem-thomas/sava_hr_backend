@@ -11,3 +11,4 @@ Flask-PyMongo
 python-dotenv
 pymongo
 flask_jwt_extended
+flask_mail
