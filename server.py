@@ -101,6 +101,7 @@ def add_job():
     description = request.form.get('description')
     date = request.form.get('date')
     status = request.form.get('status')
+    title = request.form.get('title')
     try:
         if(jobsCollection is not None):
             jobsCollection.insert_one(
@@ -109,7 +110,8 @@ def add_job():
                     "role":role,
                     "description":description,
                     "date":date,
-                    "status":status
+                    "status":status,
+                    "title":title
                 }
             )
     except Exception as e:
@@ -152,6 +154,14 @@ def get_job():
 
 @app.route("/apply", methods=['POST'])
 def apply_job():
+    fname = request.form.get('fname')
+    lname = request.form.get('lname')
+    email = request.form.get('email')
+    jobtitle = request.form.get('jobtitle')
+    status = request.form.get('status')
+    jobid = request.form.get('jobid')
+    job_name = jobsCollection.find_one({'_id':bson.ObjectId(jobid)},{"title":1})['title']
+    print("jobname",job_name, jobid)
     if 'file' not in request.files:
         return {"message":"no files attached"}, '404'
     file = request.files['file']
@@ -161,14 +171,16 @@ def apply_job():
         return {"message":"no files attached"}, '404'
     if file and allowed_file(file.filename):
         msg = Message( 
-                    'Hello', 
+                    f"Job application of {fname+ ' ' + lname} for {job_name}", 
                     sender ='jobs4ottawa@gmail.com', 
                     recipients = ['jobs4ottawa@gmail.com'] 
+                    
                 ) 
-        msg.body = 'Hello submit resume send from savahr'
+        msg.html = f"<h3>Job application of {fname+ ' ' + lname} for {job_name}.</h3><br/> Contact email: {email}<br/> Current job title: {jobtitle} <br/> Status: {status}"
         msg.attach(file.filename,None,file.read())
         mail.send(msg) 
         return {}, '200'
+    return '500'
 
 
 
