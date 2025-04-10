@@ -160,8 +160,10 @@ def apply_job():
     jobtitle = request.form.get('jobtitle')
     status = request.form.get('status')
     jobid = request.form.get('jobid')
-    job_name = jobsCollection.find_one({'_id':bson.ObjectId(jobid)},{"title":1})['title']
+    job_name = getattr(jobsCollection.find_one({'_id':bson.ObjectId(jobid)},{"title":1}),'title', None)
     print("jobname",job_name, jobid)
+    if (job_name is None):
+        return {"message":"invalid job id"}, '404'
     if 'file' not in request.files:
         return {"message":"no files attached"}, '404'
     file = request.files['file']
