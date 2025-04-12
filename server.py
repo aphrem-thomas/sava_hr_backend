@@ -61,12 +61,10 @@ def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-
-
-if __name__ == "__main__":    
-   # Get the database
-   dbname = get_database()
-   jobsCollection = dbname['jobs']
+   
+# Get the database
+dbname = get_database()
+jobsCollection = dbname['jobs']
 
 @app.route("/login", methods=['POST'])
 def login():
@@ -184,10 +182,3 @@ def apply_job():
         return {}, '200'
     return '500'
 
-
-
-
-
-
-if __name__ == "__main__":
-    app.run(debug=True)
