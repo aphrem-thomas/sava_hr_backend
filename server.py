@@ -150,15 +150,16 @@ def get_jobs():
 def get_job():
     return {}, '200'
 
+#this route for applying for job and submitting resume
 @app.route("/apply", methods=['POST'])
 def apply_job():
     fname = request.form.get('fname')
     lname = request.form.get('lname')
     email = request.form.get('email')
-    jobtitle = request.form.get('jobtitle')
+    jobtitle = request.form.get('jobtitle')#current job title of the applicant.
     status = request.form.get('status')
-    jobid = request.form.get('jobid')
-    job_name = getattr(jobsCollection.find_one({'_id':bson.ObjectId(jobid)},{"title":1}),'title', None)
+    jobid = request.form.get('jobid') #job id to which he is applying
+    job_name = getattr(jobsCollection.find_one({'_id':bson.ObjectId(jobid)},{"title":1}),'title', None) #name of job which he is applying
     print("jobname",job_name, jobid)
     if (job_name is None):
         return {"message":"invalid job id"}, '404'
@@ -169,6 +170,17 @@ def apply_job():
     # empty file without a filename.
     if file.filename == '':
         return {"message":"no files attached"}, '404'
+    if jobid is None:
+        msg = Message( 
+                    f"Resume of {fname+ ' ' + lname}", 
+                    sender ='jobs4ottawa@gmail.com', 
+                    recipients = ['jobs4ottawa@gmail.com'] 
+                    
+                ) 
+        msg.html = f"<h3>Resume of {fname+ ' ' + lname}.</h3><br/> Contact email: {email}<br/> Current job title: {jobtitle} <br/> Status: {status}"
+        msg.attach(file.filename,None,file.read())
+        mail.send(msg) 
+        return {}, '200'
     if file and allowed_file(file.filename):
         msg = Message( 
                     f"Job application of {fname+ ' ' + lname} for {job_name}", 
