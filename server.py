@@ -7,6 +7,7 @@ import time
 import jwt
 from dotenv import load_dotenv
 import os
+import bcrypt
 from pymongo import MongoClient
 from flask_jwt_extended import create_access_token
 from flask_jwt_extended import get_jwt
@@ -39,6 +40,7 @@ app.config['JWT_COOKIE_SAMESITE'] = 'None'
 mail = Mail(app) 
 
 jwt = JWTManager(app)
+salt = os.getenv('SALT')
 
 # Handle unauthorized access by unsetting JWT cookies
 @jwt.unauthorized_loader
@@ -75,6 +77,7 @@ def allowed_file(filename):
 # Get the database
 dbname = get_database()
 jobsCollection = dbname['jobs']
+userColection = dbname['users']
 
 
 @app.before_request
@@ -87,11 +90,14 @@ def before_request():
 def login():
     user_name = request.form.get('username')
     password = request.form.get('password')
-    print("received user name:", user_name)
-    print("received pass:", password)
-    print("is matching", user_name=='abc' and password == 'abc')
     resp = make_response(jsonify({"message":"howdi partner..."}))
-    if user_name=='abc' and password == 'abc':
+    hash_pass = bcrypt.hashpw(password.encode('utf-8'),salt)
+    user = userColection.find_one({"username": user_name})
+    if user is None or not bcrypt.checkpw(password.encode('utf-8'), user.get('password', b'')):
+        error_resp = make_response("", 401)
+        return error_resp
+    if user is not None and bcrypt.checkpw(password.encode('utf-8'), user.get('password', b'')):
+        print("User found and password matched", user.get('username'))
         access_token = create_access_token(identity=user_name)
         print("encoded jwt", access_token)
         set_access_cookies(resp, access_token)
@@ -99,6 +105,58 @@ def login():
     else:
         error_resp = make_response("",401)
         return error_resp
+    
+@app.route("/register", methods=['POST'])
+def register():
+    user_name = request.form.get('username')
+    password = request.form.get('password')
+    resp = make_response(jsonify({"message":"howdi partner..."}))
+    hash_pass = bcrypt.hashpw(password.encode('utf-8'),salt)
+    user = userColection.find_one({"username": user_name})
+    if user is not None:
+        print("user already exists")
+        error_resp = make_response("", 409)
+        return error_resp
+    try:
+        if(userColection is not None):
+            userColection.insert_one(
+               {
+                    "username":user_name,
+                    "password":hash_pass,
+                }
+            )
+    except Exception as e:
+        print("error in adding", e)
+        return '500'
+    resp.status_code = 200
+    resp.headers['Location'] = '/login'
+    return resp
+
+@app.route("/change_password", methods=['POST'])
+def change_password():
+    user_name = request.form.get('username')
+    password = request.form.get('oldPassword')
+    new_password = request.form.get('newPassword')
+    resp = make_response(jsonify({"message":"howdi partner..."}))
+    hash_pass = bcrypt.hashpw(password.encode('utf-8'),salt)
+    user = userColection.find_one({"username": user_name})
+    if user is None:
+        error_resp = make_response("", 401)
+        return error_resp
+    try:
+        if(userColection is not None and user is not None and bcrypt.checkpw(password.encode('utf-8'), user.get('password', b''))):
+            userColection.update_one(
+               {"username":user_name},
+               {"$set": {"password":bcrypt.hashpw(new_password.encode('utf-8'),salt)}}
+            )
+    except Exception as e:
+        print("error in updating", e)
+        return '500'
+    resp.status_code = 200
+    resp.headers['Location'] = '/login'
+    return resp
+
+    
     
 @app.route("/logout", methods=['POST'])
 @jwt_required()
