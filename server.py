@@ -1,3 +1,4 @@
+import base64
 from flask import Flask, jsonify
 from flask import request
 from flask import make_response
@@ -40,7 +41,9 @@ app.config['JWT_COOKIE_SAMESITE'] = 'None'
 mail = Mail(app) 
 
 jwt = JWTManager(app)
-salt = os.getenv('SALT')
+
+encodedSalt = os.getenv("SALT")
+salt = base64.b64decode(encodedSalt)
 
 # Handle unauthorized access by unsetting JWT cookies
 @jwt.unauthorized_loader
