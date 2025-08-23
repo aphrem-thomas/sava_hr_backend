@@ -96,10 +96,14 @@ def login():
     resp = make_response(jsonify({"message":"howdi partner..."}))
     hash_pass = bcrypt.hashpw(password.encode('utf-8'),salt)
     user = userColection.find_one({"username": user_name})
-    if user is None or not bcrypt.checkpw(password.encode('utf-8'), user.get('password', b'')):
+    user_password = user.get('password', b'') if user else b''
+    # Ensure user_password is bytes
+    if isinstance(user_password, str):
+        user_password = user_password.encode('utf-8')
+    if user is None or not bcrypt.checkpw(password.encode('utf-8'), user_password):
         error_resp = make_response("", 401)
         return error_resp
-    if user is not None and bcrypt.checkpw(password.encode('utf-8'), user.get('password', b'')):
+    if user is not None and bcrypt.checkpw(password.encode('utf-8'), user_password):
         print("User found and password matched", user.get('username'))
         access_token = create_access_token(identity=user_name)
         print("encoded jwt", access_token)
@@ -147,6 +151,8 @@ def change_password():
         error_resp = make_response("", 401)
         return error_resp
     try:
+        if isinstance(password, str):
+            password = password.encode('utf-8')
         if(userColection is not None and user is not None and bcrypt.checkpw(password.encode('utf-8'), user.get('password', b''))):
             userColection.update_one(
                {"username":user_name},
