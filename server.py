@@ -151,13 +151,14 @@ def change_password():
         error_resp = make_response("", 401)
         return error_resp
     try:
-        if isinstance(password, str):
-            password = password.encode('utf-8')
-        if(userColection is not None and user is not None and bcrypt.checkpw(password.encode('utf-8'), user.get('password', b''))):
+        if(userColection is not None and user is not None and bcrypt.checkpw(password.encode('utf-8'), user.get('password'))):
             userColection.update_one(
                {"username":user_name},
                {"$set": {"password":bcrypt.hashpw(new_password.encode('utf-8'),salt)}}
             )
+        else:
+            error_resp = make_response("", 401)
+            return error_resp
     except Exception as e:
         print("error in updating", e)
         return '500'
