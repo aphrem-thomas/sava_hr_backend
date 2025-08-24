@@ -24,23 +24,23 @@ from flask_mail import Mail, Message
 
 load_dotenv()
 
-server = Flask(__name__)
-mail = Mail(server) # instantiate the mail class 
-server.config["JWT_COOKIE_SECURE"] = True
-server.config["JWT_TOKEN_LOCATION"] = ["cookies"] 
-server.config["JWT_SECRET_KEY"] = os.getenv('SIGN_KEY')
-server.config['JWT_ALGORITHM'] = 'HS256'
-server.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(hours=1)
-server.config['MAIL_SERVER']='smtp.gmail.com'
-server.config['MAIL_PORT'] = 465
-server.config['MAIL_USERNAME'] = 'jobs4ottawa@gmail.com'
-server.config['MAIL_PASSWORD'] = os.getenv("MAIL_PASS")
-server.config['MAIL_USE_TLS'] = False
-server.config['MAIL_USE_SSL'] = True
-server.config['JWT_COOKIE_SAMESITE'] = 'None'
-mail = Mail(server) 
+app = Flask(__name__)
+mail = Mail(app) # instantiate the mail class 
+app.config["JWT_COOKIE_SECURE"] = True
+app.config["JWT_TOKEN_LOCATION"] = ["cookies"] 
+app.config["JWT_SECRET_KEY"] = os.getenv('SIGN_KEY')
+app.config['JWT_ALGORITHM'] = 'HS256'
+app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(hours=1)
+app.config['MAIL_SERVER']='smtp.gmail.com'
+app.config['MAIL_PORT'] = 465
+app.config['MAIL_USERNAME'] = 'jobs4ottawa@gmail.com'
+app.config['MAIL_PASSWORD'] = os.getenv("MAIL_PASS")
+app.config['MAIL_USE_TLS'] = False
+app.config['MAIL_USE_SSL'] = True
+app.config['JWT_COOKIE_SAMESITE'] = 'None'
+mail = Mail(app) 
 
-jwt = JWTManager(server)
+jwt = JWTManager(app)
 
 encodedSalt = os.getenv("SALT")
 salt = base64.b64decode(encodedSalt)
@@ -83,13 +83,13 @@ jobsCollection = dbname['jobs']
 userColection = dbname['users']
 
 
-@server.before_request
+@app.before_request
 def before_request():
     print("Request Headers:", request.headers)
     print("Request Cookies:", request.cookies)
     print('Request formdata', request.form)
 
-@server.route("/login", methods=['POST'])
+@app.route("/login", methods=['POST'])
 def login():
     user_name = request.form.get('username')
     password = request.form.get('password')
@@ -113,7 +113,7 @@ def login():
         error_resp = make_response("",401)
         return error_resp
     
-@server.route("/register", methods=['POST'])
+@app.route("/register", methods=['POST'])
 def register():
     user_name = request.form.get('username')
     password = request.form.get('password')
@@ -139,7 +139,7 @@ def register():
     resp.headers['Location'] = '/login'
     return resp
 
-@server.route("/change_password", methods=['POST'])
+@app.route("/change_password", methods=['POST'])
 def change_password():
     user_name = request.form.get('username')
     password = request.form.get('oldPassword')
@@ -167,7 +167,7 @@ def change_password():
 
     
     
-@server.route("/logout", methods=['POST'])
+@app.route("/logout", methods=['POST'])
 @jwt_required()
 def logout():
     resp = make_response(jsonify({"message":"howdi partner..."}))
@@ -175,7 +175,7 @@ def logout():
     return resp, 200
 
 
-@server.route("/jobs", methods=['POST'])
+@app.route("/jobs", methods=['POST'])
 @jwt_required()
 def add_job():
     print("req-->",request.form)
@@ -207,7 +207,7 @@ def add_job():
         return '500'
     return '200'
 
-@server.route("/jobs", methods=['DELETE'])
+@app.route("/jobs", methods=['DELETE'])
 @jwt_required()
 def delete_job():
     idd = request.args.get('id')
@@ -225,7 +225,7 @@ def delete_job():
 
 
 
-@server.route("/jobs", methods=['GET'])
+@app.route("/jobs", methods=['GET'])
 def get_jobs():
     item_details = jobsCollection.find({},{ "description": 0, }) #exclued description
     l_cursor = list(item_details)
@@ -236,12 +236,12 @@ def get_jobs():
     print("formdata", request.headers.get('X-CSRF-TOKEN'))
     return  json.dumps(bson.json_util.dumps(outp)), '200'
 
-@server.route("/job/<id>", methods=['GET'])
+@app.route("/job/<id>", methods=['GET'])
 def get_job(id):
     jobDetail = jobsCollection.find_one({'_id': bson.ObjectId(id)})
     return json.dumps(bson.json_util.dumps(jobDetail)), '200'
 
-@server.route("/job/<id>", methods=['DELETE'])
+@app.route("/job/<id>", methods=['DELETE'])
 @jwt_required()
 def delete_job_by_id(id):
     print("deleting job with id", id)
@@ -258,7 +258,7 @@ def delete_job_by_id(id):
     return '200'
 
 #this route for applying for job and submitting resume
-@server.route("/apply", methods=['POST'])
+@app.route("/apply", methods=['POST'])
 def apply_job():
     fname = request.form.get('fname')
     lname = request.form.get('lname')
